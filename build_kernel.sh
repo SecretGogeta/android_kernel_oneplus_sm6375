@@ -9,9 +9,11 @@ DEVICE_CODENAME="larry"
 BASE_KERNEL_NAME_PREFIX="larry-KSUN-SuSFS"
 YOUR_NAME="SecretGogeta" # Replace with your name/handle
 
-NDK_URL="https://dl.google.com/android/repository/android-ndk-r25b-linux.zip"
-NDK_DIR_NAME="android-ndk-r25b"
-NDK_EXTRACTED_SUBDIR="android-ndk-r25b"
+# --- UPDATED NDK r27c Configuration ---
+NDK_URL="https://dl.google.com/android/repository/android-ndk-r27c-linux.zip"
+NDK_DIR_NAME="android-ndk-r27c" # Used for naming consistency, zip is just 'ndk.zip'
+NDK_EXTRACTED_SUBDIR="android-ndk-r27c" # The directory name after extraction
+# --- End of NDK r27c Configuration ---
 
 GCC_AARCH64_URL="https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9"
 GCC_AARCH64_DIR_NAME="aarch64-linux-android-4.9"
@@ -20,9 +22,9 @@ CUSTOM_DEFCONFIG_PATH="config/config.gz"
 
 # KernelSU and SuSFS specific versions from rifsxd as per original request
 KERNELSU_SETUP_URL="https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next/kernel/setup.sh"
-KERNELSU_BRANCH_ARG="" # KernelSU 'next' setup script from rifsxd usually doesn't need branch arg for 'next'
+KERNELSU_BRANCH_ARG=""
 SUSFS_SETUP_URL="https://raw.githubusercontent.com/rifsxd/KernelSU-Next/next-susfs/kernel/setup.sh"
-SUSFS_BRANCH_ARG="next-susfs" # Argument for the setup script
+SUSFS_BRANCH_ARG="next-susfs"
 
 # Directories
 KERNEL_TOP_DIR=$(pwd)
@@ -40,17 +42,17 @@ info "Kernel source directory: $KERNEL_TOP_DIR"
 info "Build tools will be located in: $BUILD_TOOLS_DIR"
 mkdir -p "$BUILD_TOOLS_DIR"
 
-info "Setting up NDK (Clang from NDK r25b)..."
+info "Setting up NDK (Clang from NDK $NDK_EXTRACTED_SUBDIR)..." # Updated log message
 NDK_INSTALL_PATH="$BUILD_TOOLS_DIR/$NDK_EXTRACTED_SUBDIR"
 if [ ! -d "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64" ]; then
-    info "NDK r25b not found. Downloading and extracting..."
+    info "NDK $NDK_EXTRACTED_SUBDIR not found. Downloading and extracting..." # Updated log message
     wget --progress=bar:force:noscroll -q "$NDK_URL" -O "$BUILD_TOOLS_DIR/ndk.zip" || error "Failed to download NDK."
     unzip -q "$BUILD_TOOLS_DIR/ndk.zip" -d "$BUILD_TOOLS_DIR" || error "Failed to unzip NDK."
     [ -d "$NDK_INSTALL_PATH" ] || error "NDK extracted directory '$NDK_INSTALL_PATH' not found."
     rm "$BUILD_TOOLS_DIR/ndk.zip"
-    info "NDK r25b setup complete."
+    info "NDK $NDK_EXTRACTED_SUBDIR setup complete." # Updated log message
 else
-    info "NDK r25b already present at $NDK_INSTALL_PATH."
+    info "NDK $NDK_EXTRACTED_SUBDIR already present at $NDK_INSTALL_PATH." # Updated log message
 fi
 CLANG_BIN_PATH="$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
 [ -f "$CLANG_BIN_PATH/clang" ] || error "Clang compiler not found."
@@ -156,8 +158,6 @@ CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
 CONFIG_KSU_SUSFS_SUS_SU=n # Choice
 # === End of custom Kconfig additions ===
 EOF
-# Note: The KernelSU/SuSFS setup scripts themselves might also modify Kconfig.
-# These additions ensure certain options are set to desired values.
 
 info "Running 'make olddefconfig' to finalize .config..."
 make O="$KERNEL_TOP_DIR" olddefconfig || error "'make olddefconfig' failed."
@@ -205,7 +205,6 @@ KERNEL_STRING_CONTENT="${BASE_KERNEL_NAME_PREFIX}-${KERNEL_MAKE_VERSION} by ${YO
 sed -i "s|^kernel.string=.*|kernel.string=$KERNEL_STRING_CONTENT|" anykernel.sh || error "Failed to set kernel.string."
 sed -i "s|^device.name1=.*|device.name1=$DEVICE_CODENAME|" anykernel.sh || error "Failed to set device.name1."
 sed -i "s|^do.devicecheck=.*|do.devicecheck=1|" anykernel.sh || error "Failed to set do.devicecheck."
-# Remove other device.name entries to be safe
 sed -i '/^device.name[2-9]=/d' anykernel.sh
 sed -i '/^device.name[0-9][0-9]=/d' anykernel.sh
 
