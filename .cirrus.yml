@@ -8,12 +8,12 @@ kernel_build_task:
     memory: 16G
 
   ndk_cache:
-    folder: build_tools/android-ndk-r25b
-    fingerprint_script: echo "ndk-r25b-cache-key-v4-fresh" # <-- UPDATED FINGERPRINT
+    folder: build_tools/android-ndk-r27c # <-- UPDATED NDK FOLDER
+    fingerprint_script: echo "ndk-r27c-cache-key-v1" # <-- UPDATED FINGERPRINT FOR NEW NDK
 
   gcc_cache:
     folder: build_tools/aarch64-linux-android-4.9
-    fingerprint_script: echo "gcc-4.9-cache-key-v4-fresh"   # <-- UPDATED FINGERPRINT
+    fingerprint_script: echo "gcc-4.9-cache-key-v4-fresh" # No change here, but good to keep track
 
   env:
     DEBIAN_FRONTEND: noninteractive
