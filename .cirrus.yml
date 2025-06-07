@@ -1,0 +1,52 @@
+# .cirrus.yml
+# Cirrus CI configuration for building a custom Android kernel.
+
+kernel_build_task:
+  container:
+    image: ubuntu:20.04
+    cpu: 8
+    memory: 16G
+
+  ndk_cache:
+    folder: build_tools/android-ndk-r25b
+    fingerprint_script: echo "ndk-r25b-cache-key-v3" # Increment to invalidate cache
+
+  gcc_cache:
+    folder: build_tools/aarch64-linux-android-4.9
+    fingerprint_script: echo "gcc-4.9-cache-key-v3" # Increment to invalidate cache
+
+  env:
+    DEBIAN_FRONTEND: noninteractive
+
+  apt_get_script: # Install necessary dependencies
+    - apt-get update -y
+    - apt-get install -y --no-install-recommends \
+        build-essential \
+        bc \
+        bison \
+        ca-certificates \
+        curl \
+        device-tree-compiler \
+        flex \
+        git \
+        gperf \
+        libarchive-tools \
+        libfl-dev \
+        liblz4-tool \
+        libssl-dev \
+        lz4 \
+        make \
+        python3 \
+        software-properties-common \
+        unzip \
+        wget \
+        zip \
+        zlib1g-dev
+
+  build_script:
+    - chmod +x build_kernel.sh
+    - ./build_kernel.sh
+
+  artifacts:
+    path: "larry-KSUN-SuSFS-*-*.zip" # Glob pattern for the final zip
+    type: application/zip
