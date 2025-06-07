@@ -7,16 +7,16 @@ ANYKERNEL_URL="https://github.com/osm0sis/AnyKernel3"
 ANYKERNEL_DIR_NAME="AnyKernel3"
 DEVICE_CODENAME="larry"
 BASE_KERNEL_NAME_PREFIX="larry-KSUN-SuSFS"
-YOUR_NAME="SecretGogeta" # Replace with your name/handle
+YOUR_NAME="SecretGogeta"
 
-# --- UPDATED NDK r27c Configuration ---
+# --- NDK Configuration (Example with r27c) ---
 NDK_URL="https://dl.google.com/android/repository/android-ndk-r27c-linux.zip"
-NDK_DIR_NAME="android-ndk-r27c" # Used for naming consistency, zip is just 'ndk.zip'
-NDK_EXTRACTED_SUBDIR="android-ndk-r27c" # The directory name after extraction
-# --- End of NDK r27c Configuration ---
+NDK_EXTRACTED_SUBDIR="android-ndk-r27c"
 
-GCC_AARCH64_URL="https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9"
-GCC_AARCH64_DIR_NAME="aarch64-linux-android-4.9"
+# --- GCC 4.9 Configuration - CLONING FROM LINEAGEOS GITHUB MIRROR ---
+GCC_AARCH64_GIT_URL="https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git"
+GCC_AARCH64_GIT_BRANCH="lineage-19.1"  # CRITICAL: Ensures GCC 4.9. Verify this is correct.
+GCC_AARCH64_TARGET_DIR_NAME="aarch64" # The name of the directory it will be cloned into
 
 CUSTOM_DEFCONFIG_PATH="config/config.gz"
 
@@ -42,34 +42,39 @@ info "Kernel source directory: $KERNEL_TOP_DIR"
 info "Build tools will be located in: $BUILD_TOOLS_DIR"
 mkdir -p "$BUILD_TOOLS_DIR"
 
-info "Setting up NDK (Clang from NDK $NDK_EXTRACTED_SUBDIR)..." # Updated log message
+info "Setting up NDK (Clang from NDK $NDK_EXTRACTED_SUBDIR)..."
 NDK_INSTALL_PATH="$BUILD_TOOLS_DIR/$NDK_EXTRACTED_SUBDIR"
 if [ ! -d "$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64" ]; then
-    info "NDK $NDK_EXTRACTED_SUBDIR not found. Downloading and extracting..." # Updated log message
+    info "NDK $NDK_EXTRACTED_SUBDIR not found. Downloading and extracting..."
     wget --progress=bar:force:noscroll -q "$NDK_URL" -O "$BUILD_TOOLS_DIR/ndk.zip" || error "Failed to download NDK."
     unzip -q "$BUILD_TOOLS_DIR/ndk.zip" -d "$BUILD_TOOLS_DIR" || error "Failed to unzip NDK."
     [ -d "$NDK_INSTALL_PATH" ] || error "NDK extracted directory '$NDK_INSTALL_PATH' not found."
     rm "$BUILD_TOOLS_DIR/ndk.zip"
-    info "NDK $NDK_EXTRACTED_SUBDIR setup complete." # Updated log message
+    info "NDK $NDK_EXTRACTED_SUBDIR setup complete."
 else
-    info "NDK $NDK_EXTRACTED_SUBDIR already present at $NDK_INSTALL_PATH." # Updated log message
+    info "NDK $NDK_EXTRACTED_SUBDIR already present at $NDK_INSTALL_PATH."
 fi
 CLANG_BIN_PATH="$NDK_INSTALL_PATH/toolchains/llvm/prebuilt/linux-x86_64/bin"
 [ -f "$CLANG_BIN_PATH/clang" ] || error "Clang compiler not found."
 [ -f "$CLANG_BIN_PATH/ld.lld" ] || error "LLD linker not found."
 
-info "Setting up GCC 4.9 for aarch64..."
-GCC_AARCH64_INSTALL_PATH="$BUILD_TOOLS_DIR/$GCC_AARCH64_DIR_NAME"
+# --- MODIFIED GCC SETUP - CLONING FROM GITHUB INTO 'aarch64' ---
+info "Setting up GCC 4.9 for aarch64 by cloning from LineageOS GitHub mirror..."
+# Path where the GCC toolchain will reside (e.g., build_tools/aarch64)
+GCC_AARCH64_INSTALL_PATH="$BUILD_TOOLS_DIR/$GCC_AARCH64_TARGET_DIR_NAME"
+
 if [ ! -d "$GCC_AARCH64_INSTALL_PATH/bin" ]; then
-    info "GCC aarch64 toolchain not found. Cloning..."
-    mkdir -p "$(dirname "$GCC_AARCH64_INSTALL_PATH")"
-    git clone --depth=1 "$GCC_AARCH64_URL" "$GCC_AARCH64_INSTALL_PATH" || error "Failed to clone GCC."
-    info "GCC aarch64 toolchain setup complete."
+    info "GCC aarch64 toolchain not found at $GCC_AARCH64_INSTALL_PATH. Cloning from $GCC_AARCH64_GIT_URL (branch: $GCC_AARCH64_GIT_BRANCH) into $GCC_AARCH64_TARGET_DIR_NAME..."
+    # Clone with depth 1, specific branch, into the target directory name
+    git clone --depth=1 --branch "$GCC_AARCH64_GIT_BRANCH" "$GCC_AARCH64_GIT_URL" "$GCC_AARCH64_INSTALL_PATH" || error "Failed to clone GCC toolchain from GitHub into $GCC_AARCH64_INSTALL_PATH."
+    
+    info "GCC aarch64 toolchain setup complete from GitHub clone."
 else
-    info "GCC aarch64 toolchain already present."
+    info "GCC aarch64 toolchain already present at $GCC_AARCH64_INSTALL_PATH (likely from cache)."
 fi
 GCC_AARCH64_BIN_PATH="$GCC_AARCH64_INSTALL_PATH/bin"
-[ -f "$GCC_AARCH64_BIN_PATH/aarch64-linux-android-gcc" ] || error "aarch64-linux-android-gcc not found."
+[ -f "$GCC_AARCH64_BIN_PATH/aarch64-linux-android-gcc" ] || error "aarch64-linux-android-gcc not found in $GCC_AARCH64_BIN_PATH."
+# --- END OF MODIFIED GCC SETUP ---
 
 info "Exporting environment variables for build..."
 export PATH="$CLANG_BIN_PATH:$GCC_AARCH64_BIN_PATH:$PATH"
@@ -88,17 +93,18 @@ export OBJDUMP="llvm-objdump"
 export STRIP="llvm-strip"
 export LLVM=1
 export LLVM_IAS=1
-export CROSS_COMPILE="${GCC_AARCH64_BIN_PATH}/aarch64-linux-android-"
+export CROSS_COMPILE="${GCC_AARCH64_BIN_PATH}/aarch64-linux-android-" # This prefix must match tools in the bin dir
 
 info "PATH set to: $PATH"
 info "CC: $(command -v $CC)"
 info "CROSS_COMPILE prefix: $CROSS_COMPILE"
+info "KBUILD_BUILD_USER: $KBUILD_BUILD_USER"
 
 # === Kernel Operations ===
 cd "$KERNEL_TOP_DIR" || error "Failed to cd to kernel top directory."
 
 info "Integrating KernelSU from $KERNELSU_SETUP_URL..."
-rm -rf KernelSU drivers/kernelsu modules/kernelsu fs/kernelsu # Clean previous attempt
+rm -rf KernelSU drivers/kernelsu modules/kernelsu fs/kernelsu
 if curl -LSs "$KERNELSU_SETUP_URL" | bash -s $KERNELSU_BRANCH_ARG; then
     info "KernelSU integration script completed."
 else
@@ -107,7 +113,7 @@ fi
 ([ -d "drivers/kernelsu" ] || [ -d "KernelSU" ]) || error "KernelSU directory not found post-integration."
 
 info "Integrating SuSFS from $SUSFS_SETUP_URL (branch/arg: $SUSFS_BRANCH_ARG)..."
-rm -rf fs/susfs # Clean previous attempt
+rm -rf fs/susfs
 if curl -LSs "$SUSFS_SETUP_URL" | bash -s $SUSFS_BRANCH_ARG; then
     info "SuSFS integration script completed."
 else
@@ -137,9 +143,9 @@ CONFIG_TMPFS_POSIX_ACL=y
 
 # KernelSU
 CONFIG_KSU=y
-# CONFIG_KSU_KPROBES_HOOK=n # GHA example had this as 'n', setup script from rifsxd might set default
+# CONFIG_KSU_KPROBES_HOOK=n
 
-# SuSFS (KernelSU variant) - ensure these are compatible with rifsxd's version
+# SuSFS (KernelSU variant)
 CONFIG_KSU_SUSFS=y
 CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y
 CONFIG_KSU_SUSFS_SUS_PATH=y
@@ -147,15 +153,15 @@ CONFIG_KSU_SUSFS_SUS_MOUNT=y
 CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y
 CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y
 CONFIG_KSU_SUSFS_SUS_KSTAT=y
-CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n # Choice, 'n' often preferred to avoid issues
+CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n
 CONFIG_KSU_SUSFS_TRY_UMOUNT=y
 CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y
 CONFIG_KSU_SUSFS_SPOOF_UNAME=y
-CONFIG_KSU_SUSFS_ENABLE_LOG=y # Set to 'n' if logs are too verbose for release
+CONFIG_KSU_SUSFS_ENABLE_LOG=y
 CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y
 CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y
 CONFIG_KSU_SUSFS_OPEN_REDIRECT=y
-CONFIG_KSU_SUSFS_SUS_SU=n # Choice
+CONFIG_KSU_SUSFS_SUS_SU=n
 # === End of custom Kconfig additions ===
 EOF
 
@@ -221,6 +227,7 @@ zip -r9 "$FINAL_ZIP_PATH" . -x ".git/*" -x "README.md" -x "*.zip" || error "Fail
 cd "$KERNEL_TOP_DIR" || error "Failed to cd back to kernel top directory."
 
 # === Final Output ===
+# ... (same as before) ...
 info "---------------------------------------------------------------------"
 info " Android Kernel Build Successfully Completed! "
 info "---------------------------------------------------------------------"
