@@ -8,12 +8,12 @@ kernel_build_task:
     memory: 16G
 
   ndk_cache:
-    folder: build_tools/android-ndk-r27c # <-- UPDATED NDK FOLDER
-    fingerprint_script: echo "ndk-r27c-cache-key-v1" # <-- UPDATED FINGERPRINT FOR NEW NDK
+    folder: build_tools/android-ndk-r27c # Or your NDK version
+    fingerprint_script: echo "ndk-r27c-cache-key-v1"
 
   gcc_cache:
-    folder: build_tools/aarch64-linux-android-4.9
-    fingerprint_script: echo "gcc-4.9-cache-key-v4-fresh" # No change here, but good to keep track
+    folder: build_tools/aarch64 # <-- UPDATED to match GCC_AARCH64_TARGET_DIR_NAME
+    fingerprint_script: echo "gcc-4.9-lineageos-github-clone-aarch64dir-v1" # <-- NEW FINGERPRINT
 
   env:
     DEBIAN_FRONTEND: noninteractive
