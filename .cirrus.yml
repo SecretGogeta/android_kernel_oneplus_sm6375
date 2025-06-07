@@ -9,11 +9,11 @@ kernel_build_task:
 
   ndk_cache:
     folder: build_tools/android-ndk-r25b
-    fingerprint_script: echo "ndk-r25b-cache-key-v3" # Increment to invalidate cache
+    fingerprint_script: echo "ndk-r25b-cache-key-v4-fresh" # <-- UPDATED FINGERPRINT
 
   gcc_cache:
     folder: build_tools/aarch64-linux-android-4.9
-    fingerprint_script: echo "gcc-4.9-cache-key-v3" # Increment to invalidate cache
+    fingerprint_script: echo "gcc-4.9-cache-key-v4-fresh"   # <-- UPDATED FINGERPRINT
 
   env:
     DEBIAN_FRONTEND: noninteractive
